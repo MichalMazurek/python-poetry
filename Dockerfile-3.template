@@ -1,0 +1,6 @@
+
+FROM python:{python_tag}
+
+RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/{poetry_version}/get-poetry.py | python
+
+CMD ["python3"]
