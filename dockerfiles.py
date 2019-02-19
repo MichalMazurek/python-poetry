@@ -3,6 +3,8 @@ from pathlib import Path
 import click
 from glob import glob
 from subprocess import run
+import fnmatch
+from functools import partial
 
 
 @click.group()
@@ -12,11 +14,12 @@ def main():
 
 @main.command()
 def build():
-
+    """Build docker images."""
+    tags = []
     for dockerfile in sorted(glob("./*/**/Dockerfile") + glob("./*/Dockerfile")):
 
         tag_name = Path(dockerfile).parent.name
-
+        tags.append(tag_name)
         run(
             [
                 "docker",
@@ -27,6 +30,22 @@ def build():
             ]
         )
 
+    Path("./tags.txt").write_text("\n".join(tags))
+
+
+@main.command()
+@click.argument("docker_hub_prefix", nargs=1)
+def push(docker_hub_prefix: str):
+    """Push docker images."""
+
+    prefix = (
+        docker_hub_prefix + "/python-poetry" if docker_hub_prefix else "python-poetry"
+    )
+    for tag in Path("./tags.txt").read_text("utf8").splitlines():
+
+        run(["docker", "tag", f"python-poetry:{tag}", f"{prefix}:{tag}"])
+        run(["docker", "push", f"{prefix}:{tag}"])
+
 
 @main.command()
 def clean():
@@ -36,19 +55,30 @@ def clean():
         path.unlink()
         path.parent.rmdir()
         try:
-            if int(path.name[0]):
+            if int(path.parent.name[0]):
                 path.parent.parent.rmdir()
-        except ValueError:
+        except (ValueError, OSError):
             pass
 
 
 @main.command()
+@click.argument("tag_masks", nargs=-1)
 @click.option("-v", "--poetry-version", default="master", type=str)
-def make(poetry_version="master"):
+def make(tag_masks: str = "*", poetry_version: str = "master"):
     """Generate docker files for all tags."""
     tags = requests.get(
         "https://registry.hub.docker.com/v1/repositories/python/tags"
     ).json()
+
+    def match_tag(tag) -> bool:
+        tag_name = tag["name"]
+        return [
+            tag_mask
+            for tag_mask in tag_masks
+            if tag_mask == "*" or fnmatch.fnmatch(tag_name, tag_mask)
+        ]
+
+    tags = list(filter(match_tag, tags))
 
     click.echo(f"Found {len(tags)} tags.")
     click.echo("Generating ", nl=False)
@@ -58,6 +88,7 @@ def make(poetry_version="master"):
 
     for tag in tags:
         tag_name = tag["name"]
+
         docker_template = docker_3_template
 
         try:

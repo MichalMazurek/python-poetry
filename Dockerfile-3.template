@@ -3,4 +3,6 @@ FROM python:{python_tag}
 
 RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/{poetry_version}/get-poetry.py | python
 
+ENV PATH=/root/.poetry/bin/:$PATH
+
 CMD ["python3"]
