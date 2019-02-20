@@ -41,7 +41,15 @@ Example:
 make push michalmazurek
 ```
 
-Will all build images to docker registry. You can find currently built tags in `./tags.txt`.
+This will push all built images to docker registry (with example above, to: michalmazurek/python-poetry:{TAG})
+
+```bash
+make push hub.example.com/user
+```
+
+This will push images to hub.example.com/user/python-poetry:{tag}
+
+> You can find currently built tags in `./tags.txt`.
 
 ## Command Line Interface
 

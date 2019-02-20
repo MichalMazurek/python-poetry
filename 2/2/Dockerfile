@@ -1,7 +1,9 @@
 
 FROM python:2
 
-RUN curl -sSL https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py | python
+RUN pip install requests
+
+RUN python -c "import requests; print(requests.get('https://raw.githubusercontent.com/sdispater/poetry/master/get-poetry.py').text)"
 
 ENV PATH=/root/.poetry/bin/:$PATH
 
